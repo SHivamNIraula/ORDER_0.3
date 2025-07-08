@@ -73,15 +73,14 @@ WSGI_APPLICATION = 'restaurant_system.wsgi.application'
 ASGI_APPLICATION = 'restaurant_system.asgi.application'
 
 # Database configuration
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'restaurant_system_db',
-        'USER': 'restaurant_user',
-        'PASSWORD': 'WSSHLI',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'postgres://restaurant_user:WSSHLI@localhost:5432/restaurant_system_db'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # Channels configuration
@@ -89,7 +88,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')],
         },
     },
 }
