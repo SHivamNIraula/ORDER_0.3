@@ -1,0 +1,538 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Table - Restaurant Order System{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+    
+    .table-selection-container {
+        padding: 2rem 0;
+        min-height: 100vh;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .page-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .page-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        font-weight: 400;
+        margin-bottom: 0;
+    }
+    
+    .restaurant-floor {
+        background: rgba(255, 255, 255, 0.95);
+        min-height: 70vh;
+        position: relative;
+        border-radius: 25px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 2rem;
+    }
+    
+    .restaurant-floor::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(255, 165, 0, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(255, 192, 203, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+    
+    .tables-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2.5rem;
+        padding: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .table-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 25px;
+        padding: 2rem;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        border: 3px solid transparent;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    
+    .table-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #667eea, #764ba2, #ff6b6b);
+        transition: all 0.4s ease;
+        border-radius: 25px 25px 0 0;
+    }
+    
+    .table-card:hover::before {
+        height: 12px;
+        background: linear-gradient(90deg, #667eea, #764ba2, #ff6b6b, #4ecdc4);
+    }
+    
+    .table-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    }
+    
+    .table-card.available {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15);
+    }
+    
+    .table-card.occupied {
+        border-color: #ef4444;
+        background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+        opacity: 0.7;
+        cursor: not-allowed;
+        box-shadow: 0 15px 35px rgba(239, 68, 68, 0.15);
+    }
+    
+    .table-card.occupied:hover {
+        transform: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table-visual {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        height: 140px;
+        position: relative;
+    }
+    
+    .table-icon {
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    
+    .table-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .default-table-icon {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: #8B4513;
+    }
+    
+    .table-card:hover .table-icon {
+        transform: scale(1.15) rotate(2deg);
+    }
+    
+    
+    .table-info {
+        text-align: center;
+    }
+    
+    .table-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .table-capacity {
+        font-size: 1rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+    
+    .table-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-available {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+    
+    .status-occupied {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    
+    .legend {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        z-index: 20;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .legend-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 1rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #4b5563;
+    }
+    
+    .legend-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .legend-available {
+        background: #10b981;
+    }
+    
+    .legend-occupied {
+        background: #ef4444;
+    }
+    
+    .instruction-panel {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .instruction-text {
+        color: white;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .instruction-icon {
+        font-size: 2rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .tables-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .table-card {
+            padding: 1.5rem;
+        }
+        
+        .table-visual {
+            height: 110px;
+        }
+        
+        .table-icon {
+            width: 90px;
+            height: 90px;
+        }
+        
+        
+        
+        .legend {
+            position: static;
+            margin-bottom: 1rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+        }
+    }
+    
+    .pulse-animation {
+        animation: pulse 3s infinite, glow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes pulse {
+        0% { 
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15), 0 0 0 0 rgba(16, 185, 129, 0.7); 
+        }
+        70% { 
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15), 0 0 0 15px rgba(16, 185, 129, 0); 
+        }
+        100% { 
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15), 0 0 0 0 rgba(16, 185, 129, 0); 
+        }
+    }
+    
+    @keyframes glow {
+        from {
+            border-color: #10b981;
+        }
+        to {
+            border-color: #34d399;
+        }
+    }
+</style>
+
+<div class="table-selection-container">
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-utensils"></i> Select Your Table
+            </h1>
+            <p class="page-subtitle">Choose from our available dining tables</p>
+        </div>
+        
+        <div class="restaurant-floor">
+            <div class="legend">
+                <div class="legend-title">Table Status</div>
+                <div class="legend-item">
+                    <div class="legend-color legend-available"></div>
+                    Available
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-occupied"></div>
+                    Occupied
+                </div>
+            </div>
+            
+            <div class="tables-grid">
+                {% for table in tables %}
+                <div class="table-card {% if table.is_available %}available pulse-animation{% else %}occupied{% endif %}" 
+                     {% if table.is_available %}onclick="selectTable({{ table.id }})"{% endif %}>
+                    <div class="table-visual">
+                        <div class="table-icon">
+                            {% if table.icon %}
+                                <img src="{{ table.icon.url }}" alt="Table {{ table.table_number }}">
+                            {% else %}
+                                <div class="default-table-icon">
+                                    <i class="fas fa-table"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="table-info">
+                        <div class="table-title">Table {{ table.table_number }}</div>
+                        <div class="table-capacity">
+                            <i class="fas fa-users"></i> Capacity: {{ table.capacity }} people
+                        </div>
+                        <div class="table-status {% if table.is_available %}status-available{% else %}status-occupied{% endif %}">
+                            {% if table.is_available %}
+                                <i class="fas fa-check-circle"></i> Available
+                            {% else %}
+                                <i class="fas fa-times-circle"></i> Occupied
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h4>No tables available</h4>
+                        <p>Please check back later or contact the restaurant.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="instruction-panel">
+            <div class="instruction-icon">
+                <i class="fas fa-hand-pointer"></i>
+            </div>
+            <div class="instruction-text">
+                Click on any available table to make your selection and proceed to the menu
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectTable(tableId) {
+    // Add loading state
+    const tableCard = event.currentTarget;
+    const originalContent = tableCard.innerHTML;
+    
+    // Show loading spinner
+    tableCard.innerHTML = `
+        <div class="table-visual">
+            <div class="table-icon">
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        <div class="table-info">
+            <div class="table-title">Reserving...</div>
+            <div class="table-capacity">Please wait</div>
+        </div>
+    `;
+    
+    // Add loading class
+    tableCard.classList.add('loading');
+    tableCard.style.pointerEvents = 'none';
+    
+    // Direct navigation without confirmation
+    setTimeout(() => {
+        // Show success state briefly
+        tableCard.innerHTML = `
+            <div class="table-visual">
+                <div class="table-icon" style="background: #10b981;">
+                    <i class="fas fa-check text-white" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+            <div class="table-info">
+                <div class="table-title">Selected!</div>
+                <div class="table-capacity">Redirecting...</div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            window.location.href = "{% url 'tables:select_table' 0 %}".replace('0', tableId);
+        }, 1000);
+    }, 500);
+}
+
+// Add smooth scrolling for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects for better interaction feedback
+    const availableTables = document.querySelectorAll('.table-card.available');
+    
+    availableTables.forEach(table => {
+        table.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.02)';
+        });
+        
+        table.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('loading')) {
+                this.style.transform = 'translateY(0) scale(1)';
+            }
+        });
+    });
+    
+    // Auto-refresh table status every 30 seconds
+    setInterval(() => {
+        if (!document.querySelector('.table-card.loading')) {
+            location.reload();
+        }
+    }, 30000);
+});
+
+// Add keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key >= '1' && e.key <= '9') {
+        const tableNumber = parseInt(e.key);
+        const tableCard = document.querySelector(`[onclick*="selectTable"] .table-number:contains('${tableNumber}')`);
+        if (tableCard) {
+            tableCard.closest('.table-card').click();
+        }
+    }
+});
+</script>
+
+<style>
+.table-card.loading {
+    animation: pulse-loading 1.5s infinite;
+}
+
+@keyframes pulse-loading {
+    0% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(0.98);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+}
+
+.spinner-border {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-width: 0.3em;
+}
+
+/* Add floating animation for available tables */
+.table-card.available {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+</style>
+{% endblock %}

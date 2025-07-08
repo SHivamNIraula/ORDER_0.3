@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Food Menu - Restaurant Order System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .food-card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .price-tag {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #28a745;
+    }
+    .category-nav {
+        position: sticky;
+        top: 76px;
+        z-index: 100;
+        background: white;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+    }
+    .add-to-cart-btn {
+        position: relative;
+    }
+    .btn-loading {
+        pointer-events: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Category Navigation -->
+<div class="category-nav">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="fas fa-hamburger"></i> Our Menu
+            </h2>
+            <nav class="nav nav-pills justify-content-center">
+                {% for category in categories %}
+                <a class="nav-link {% if forloop.first %}active{% endif %}" href="#category-{{ category.id }}">{{ category.name }}</a>
+                {% endfor %}
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Food Categories and Items -->
+{% for category in categories %}
+<section id="category-{{ category.id }}" class="mb-5">
+    <h3 class="mb-4">
+        <i class="fas fa-utensils"></i> {{ category.name }}
+    </h3>
+    <div class="row">
+        {% for item in category.items.all %}
+        {% if item.is_available %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card food-card h-100">
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <img src="https://via.placeholder.com/300x200/6c757d/ffffff?text={{ item.name|urlencode }}" 
+                         class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.name }}</h5>
+                    <p class="card-text">{{ item.description|default:"Delicious food item" }}</p>
+                    <small class="text-muted">Prep time: {{ item.preparation_time }} minutes</small>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="price-tag">${{ item.price }}</span>
+                        <button class="btn btn-outline-primary btn-sm add-to-cart-btn" 
+                                data-food-id="{{ item.id }}" 
+                                data-name="{{ item.name }}" 
+                                data-price="{{ item.price }}">
+                            <i class="fas fa-plus"></i> <span class="btn-text">Add to Cart</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted text-center">No items available in this category.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% empty %}
+<div class="text-center py-5">
+    <h4 class="text-muted">No menu categories available</h4>
+    <p class="text-muted">Please check back later or contact the restaurant.</p>
+</div>
+{% endfor %}
+
+<!-- Floating Cart Button -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    <button type="button" class="btn btn-success btn-lg rounded-circle" onclick="viewCart()">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">
+            0
+        </span>
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize cart count from server
+    let cartCount = {{ cart_count|default:0 }};
+    updateCartDisplay();
+    
+    // Add event listeners to all "Add to Cart" buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const foodId = this.getAttribute('data-food-id');
+                const name = this.getAttribute('data-name');
+                addToCart(foodId, name, this);
+            });
+        });
+    });
+    
+    function addToCart(foodId, name, buttonElement) {
+        // Show loading state
+        const originalText = buttonElement.querySelector('.btn-text').textContent;
+        buttonElement.querySelector('.btn-text').textContent = 'Adding...';
+        buttonElement.classList.add('btn-loading');
+        buttonElement.disabled = true;
+        
+        // Make AJAX request to add item to cart
+        fetch(`{% url 'food:add_to_cart' 0 %}`.replace('0', foodId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cartCount = data.cart_count;
+                updateCartDisplay();
+                showAddedMessage(data.message);
+            } else {
+                showErrorMessage(data.message || 'Error adding item to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorMessage('Network error. Please try again.');
+        })
+        .finally(() => {
+            // Reset button state
+            buttonElement.querySelector('.btn-text').textContent = originalText;
+            buttonElement.classList.remove('btn-loading');
+            buttonElement.disabled = false;
+        });
+    }
+    
+    function updateCartDisplay() {
+        document.getElementById('cart-count').textContent = cartCount;
+        
+        // Hide badge if cart is empty
+        const badge = document.getElementById('cart-count');
+        if (cartCount === 0) {
+            badge.style.display = 'none';
+        } else {
+            badge.style.display = 'inline-block';
+        }
+    }
+    
+    function showAddedMessage(message) {
+        // Create and show a toast message
+        const toast = document.createElement('div');
+        toast.className = 'toast show position-fixed top-0 end-0 m-3';
+        toast.style.zIndex = '1060';
+        toast.innerHTML = `
+            <div class="toast-header">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <strong class="me-auto">Added to Cart</strong>
+                <button type="button" class="btn-close" onclick="this.closest('.toast').remove()"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Remove toast after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
+    }
+    
+    function showErrorMessage(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast show position-fixed top-0 end-0 m-3';
+        toast.style.zIndex = '1060';
+        toast.innerHTML = `
+            <div class="toast-header">
+                <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" onclick="this.closest('.toast').remove()"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
+    
+    function viewCart() {
+        window.location.href = "{% url 'orders:view_cart' %}";
+    }
+    
+    // Get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Smooth scrolling for category navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+            
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

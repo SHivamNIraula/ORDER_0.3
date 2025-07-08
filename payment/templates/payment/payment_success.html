@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful - Restaurant Order System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-animation {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .checkmark {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #28a745;
+        margin: 0 auto 2rem;
+        animation: scaleIn 0.5s ease-out 0.3s both;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+        }
+        to {
+            transform: scale(1);
+        }
+    }
+    
+    .order-tracking {
+        background: linear-gradient(90deg, #28a745 0%, #28a745 25%, #ffc107 25%, #ffc107 50%, #6c757d 50%, #6c757d 100%);
+        height: 4px;
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="text-center success-animation">
+            <!-- Success Icon -->
+            <div class="checkmark">
+                <i class="fas fa-check fa-3x text-white"></i>
+            </div>
+            
+            <h1 class="text-success mb-3">Payment Successful!</h1>
+            <p class="lead text-muted mb-4">Thank you for your order. Your payment has been processed successfully.</p>
+            
+            <!-- Order Details Card -->
+            <div class="card text-start">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt"></i> Order Confirmation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Order Information</h6>
+                            <p class="mb-1"><strong>Order Number:</strong> #ORD-2025-001</p>
+                            <p class="mb-1"><strong>Date & Time:</strong> January 30, 2025 - 2:30 PM</p>
+                            <p class="mb-1"><strong>Table:</strong> Table 1</p>
+                            <p class="mb-3"><strong>Payment Method:</strong> Credit Card</p>
+                            
+                            <h6>Contact Information</h6>
+                            <p class="mb-1"><strong>Customer:</strong> {{ user.username }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ user.email }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Order Summary</h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex justify-content-between">
+                                    <span>Subtotal:</span>
+                                    <span>$56.95</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Tax (8%):</span>
+                                    <span>$4.56</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Service Charge:</span>
+                                    <span>$2.00</span>
+                                </div>
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between h6">
+                                    <strong>Total Paid:</strong>
+                                    <strong class="text-success">$63.51</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div class="mt-4">
+                        <h6>Items Ordered</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Spring Rolls</td>
+                                        <td>2</td>
+                                        <td>$8.99</td>
+                                        <td>$17.98</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Grilled Ribeye Steak</td>
+                                        <td>1</td>
+                                        <td>$28.99</td>
+                                        <td>$28.99</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fresh Orange Juice</td>
+                                        <td>2</td>
+                                        <td>$4.99</td>
+                                        <td>$9.98</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Status -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="order-tracking mb-3"></div>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="small mb-0"><strong>Confirmed</strong></p>
+                            <p class="small text-muted">2:30 PM</p>
+                        </div>
+                        <div class="col-3">
+                            <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                            <p class="small mb-0"><strong>Preparing</strong></p>
+                            <p class="small text-muted">Current</p>
+                        </div>
+                        <div class="col-3">
+                            <i class="fas fa-bell fa-2x text-muted mb-2"></i>
+                            <p class="small mb-0"><strong>Ready</strong></p>
+                            <p class="small text-muted">~15 min</p>
+                        </div>
+                        <div class="col-3">
+                            <i class="fas fa-utensils fa-2x text-muted mb-2"></i>
+                            <p class="small mb-0"><strong>Served</strong></p>
+                            <p class="small text-muted">~20 min</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Estimated preparation time:</strong> 15-20 minutes
+                        <br>
+                        <small>We'll notify you when your order is ready!</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-4">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'orders:order_list' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-list"></i> View All Orders
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'food:food_menu' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-plus"></i> Order More
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customer Service Info -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <h6>Need Help?</h6>
+                    <p class="text-muted mb-3">Our staff is here to assist you with any questions or concerns.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><i class="fas fa-phone text-primary"></i> <strong>Call Us:</strong></p>
+                            <p class="text-muted">(555) 123-4567</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><i class="fas fa-envelope text-primary"></i> <strong>Email:</strong></p>
+                            <p class="text-muted">support@restaurant.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh order status (in a real app, this would use WebSocket)
+    function checkOrderStatus() {
+        // Simulate order status updates
+        setTimeout(() => {
+            console.log('Checking order status...');
+            // In a real implementation, this would make an AJAX call to check status
+        }, 30000); // Check every 30 seconds
+    }
+    
+    // Start checking order status
+    document.addEventListener('DOMContentLoaded', function() {
+        checkOrderStatus();
+        
+        // Show success message
+        setTimeout(() => {
+            if (Notification.permission === 'granted') {
+                new Notification('Order Confirmed!', {
+                    body: 'Your order #ORD-2025-001 has been confirmed and is being prepared.',
+                    icon: '/static/images/logo.png'
+                });
+            }
+        }, 1000);
+    });
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+</script>
+{% endblock %}

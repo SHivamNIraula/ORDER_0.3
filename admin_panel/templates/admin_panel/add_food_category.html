@@ -1,0 +1,31 @@
+{% extends 'admin_panel/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Food Category{% endblock %}
+{% block page_title %}Add Food Category{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Add New Food Category</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Category
+                        </button>
+                        <a href="{% url 'admin_panel:food_management' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Food Management
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

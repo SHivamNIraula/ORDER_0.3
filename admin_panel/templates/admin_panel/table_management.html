@@ -1,0 +1,185 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Table Management{% endblock %}
+{% block page_title %}Table Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Tables</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Table #</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th>Reserved By</th>
+                                <th>Reserved At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for table in tables %}
+                            <tr class="{% if table.is_available %}table-status-available{% else %}table-status-occupied{% endif %}">
+                                <td><strong>{{ table.table_number }}</strong></td>
+                                <td>{{ table.capacity }} people</td>
+                                <td>
+                                    {% if table.is_available %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Occupied</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if table.reserved_by %}
+                                        {{ table.reserved_by.username }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if table.reserved_at %}
+                                        {{ table.reserved_at|date:"M d, H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if table.is_available %}
+                                        <button class="btn btn-sm btn-outline-danger change-status-btn" 
+                                                data-table-id="{{ table.id }}" data-table-number="{{ table.table_number }}" 
+                                                data-current-status="available">
+                                            <i class="fas fa-lock"></i> Mark Occupied
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-success change-status-btn" 
+                                                data-table-id="{{ table.id }}" data-table-number="{{ table.table_number }}" 
+                                                data-current-status="occupied">
+                                            <i class="fas fa-unlock"></i> Mark Available
+                                        </button>
+                                        {% if table.reserved_by %}
+                                        <button class="btn btn-sm btn-outline-warning release-table-btn ms-1" 
+                                                data-table-id="{{ table.id }}" data-table-number="{{ table.table_number }}">
+                                            <i class="fas fa-user-times"></i> Release
+                                        </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No tables found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Add New Table</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.table_number.label_tag }}
+                        {{ form.table_number }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.capacity.label_tag }}
+                        {{ form.capacity }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Table</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Table Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-success">{{ tables|length }}</h3>
+                        <small class="text-muted">Total Tables</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-info">{{ tables|length|add:"-1" }}</h3>
+                        <small class="text-muted">Available</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).on('click', '.release-table-btn', function() {
+    const tableId = $(this).data('table-id');
+    const tableNumber = $(this).data('table-number');
+    
+    if (confirm(`Are you sure you want to release Table ${tableNumber}?`)) {
+        $.post(`/admin-panel/table/${tableId}/release/`, {
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .fail(function() {
+            alert('Error releasing table');
+        });
+    }
+});
+
+$(document).on('click', '.change-status-btn', function() {
+    const tableId = $(this).data('table-id');
+    const tableNumber = $(this).data('table-number');
+    const currentStatus = $(this).data('current-status');
+    
+    let actionText = currentStatus === 'available' ? 'mark as occupied' : 'mark as available';
+    
+    if (confirm(`Are you sure you want to ${actionText} Table ${tableNumber}?`)) {
+        $.post(`/admin-panel/table/${tableId}/change-status/`, {
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(data) {
+            if (data.success) {
+                // Show success message
+                const alertDiv = $('<div class="alert alert-success alert-dismissible fade show" role="alert">')
+                    .html(`<strong>Success!</strong> ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`);
+                
+                $('.row').prepend(alertDiv);
+                
+                // Reload page to update the table status
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            } else {
+                alert(data.message);
+            }
+        })
+        .fail(function() {
+            alert('Error changing table status');
+        });
+    }
+});
+</script>
+{% endblock %}

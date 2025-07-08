@@ -1,0 +1,167 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Income Reports{% endblock %}
+{% block page_title %}Income Reports{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Current Month Summary</h5>
+            </div>
+            <div class="card-body">
+                <h3 class="text-primary">${{ daily_total }}</h3>
+                <p class="text-muted">Total Revenue This Month</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Current Year Summary</h5>
+            </div>
+            <div class="card-body">
+                <h3 class="text-success">${{ yearly_total }}</h3>
+                <p class="text-muted">Total Revenue This Year</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Daily Reports - {{ current_month }}/{{ current_year }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Orders</th>
+                                <th>Completed</th>
+                                <th>Cancelled</th>
+                                <th>Revenue</th>
+                                <th>Avg Order</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in daily_reports %}
+                            <tr>
+                                <td>{{ report.date|date:"M d" }}</td>
+                                <td>{{ report.total_orders }}</td>
+                                <td><span class="text-success">{{ report.completed_orders }}</span></td>
+                                <td><span class="text-danger">{{ report.cancelled_orders }}</span></td>
+                                <td class="fw-bold">${{ report.total_revenue }}</td>
+                                <td>${{ report.average_order_value }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No reports available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Monthly Reports - {{ current_year }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Month</th>
+                                <th>Revenue</th>
+                                <th>Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in monthly_reports %}
+                            <tr>
+                                <td>{{ report.month }}/{{ report.year }}</td>
+                                <td class="fw-bold">${{ report.total_revenue }}</td>
+                                <td>{{ report.total_orders }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">No monthly reports</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Generate Reports</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin_panel:generate_reports' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Report Type</label>
+                        <select name="report_type" class="form-select" id="reportType">
+                            <option value="daily">Daily Report</option>
+                            <option value="monthly">Monthly Report</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="dateField">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3 d-none" id="monthYearFields">
+                        <div class="row">
+                            <div class="col">
+                                <label class="form-label">Month</label>
+                                <select name="month" class="form-select">
+                                    {% for i in "123456789012"|make_list %}
+                                    <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Year</label>
+                                <input type="number" name="year" class="form-control" value="{{ current_year }}" min="2020" max="2030">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('reportType').addEventListener('change', function() {
+    const reportType = this.value;
+    const dateField = document.getElementById('dateField');
+    const monthYearFields = document.getElementById('monthYearFields');
+    
+    if (reportType === 'daily') {
+        dateField.classList.remove('d-none');
+        monthYearFields.classList.add('d-none');
+    } else {
+        dateField.classList.add('d-none');
+        monthYearFields.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

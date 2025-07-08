@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful - Restaurant Order System{% endblock %}
+
+{% block content %}
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div class="row w-100">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <!-- Success Card -->
+            <div class="card shadow-lg border-0">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-success rounded-circle" style="width: 80px; height: 80px;">
+                            <i class="fas fa-check text-white" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    <h1 class="text-success mb-3">Payment Successful!</h1>
+                    <p class="lead text-muted mb-4">
+                        Thank you for your payment. Your order has been confirmed and is being prepared.
+                    </p>
+                    
+                    <!-- Order Summary in Small Text -->
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body py-3">
+                            <h6 class="text-muted mb-3 text-uppercase small">Order Details</h6>
+                            
+                            <div class="row text-start">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Order Number</small>
+                                    <small class="fw-bold">#{{ order.id }}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Table Number</small>
+                                    <small class="fw-bold">{{ order.table.table_number }}</small>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-2">
+                            
+                            <div class="row text-start">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Order Date</small>
+                                    <small class="fw-bold">{{ order.created_at|date:"M d, Y" }}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Order Time</small>
+                                    <small class="fw-bold">{{ order.created_at|date:"H:i" }}</small>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-2">
+                            
+                            <!-- Order Items in Small Text -->
+                            <div class="text-start">
+                                <small class="text-muted d-block mb-2">Items Ordered</small>
+                                {% for item in order.items.all %}
+                                <div class="d-flex justify-content-between align-items-center py-1">
+                                    <small class="text-dark">
+                                        <span class="badge bg-primary badge-sm me-1" style="font-size: 0.65rem;">{{ item.quantity }}x</span>
+                                        {{ item.food_item.name }}
+                                    </small>
+                                    <small class="fw-bold text-dark">${{ item.subtotal }}</small>
+                                </div>
+                                {% endfor %}
+                                
+                                <hr class="my-2">
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted fw-bold">Total Amount</small>
+                                    <small class="text-success fw-bold fs-6">${{ order.total_amount }}</small>
+                                </div>
+                            </div>
+                            
+                            {% if order.special_instructions %}
+                            <hr class="my-2">
+                            <div class="text-start">
+                                <small class="text-muted d-block">Special Instructions</small>
+                                <small class="text-dark fst-italic">"{{ order.special_instructions }}"</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Information -->
+                    <div class="mb-4">
+                        <small class="text-muted d-block mb-1">Customer</small>
+                        <small class="fw-bold">{{ order.customer.get_full_name|default:order.customer.username }}</small>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-receipt"></i> View Order Details
+                        </a>
+                        <a href="{% url 'food:food_menu' %}" class="btn btn-success">
+                            <i class="fas fa-utensils"></i> Order More Food
+                        </a>
+                    </div>
+                    
+                    <!-- Additional Info -->
+                    <div class="mt-4 pt-3 border-top">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            You will receive updates about your order status. Please keep your table number handy.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Celebration Animation -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-heart text-danger"></i>
+                    Thank you for dining with us!
+                    <i class="fas fa-heart text-danger"></i>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Success page specific styles */
+.badge-sm {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Subtle animation for success icon */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.bg-success.rounded-circle {
+    animation: pulse 2s infinite;
+}
+
+/* Small text styling */
+.card-body small {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Success page background */
+.bg-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+}
+
+/* Card shadow enhancement */
+.shadow-lg {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+}
+
+/* Order details styling */
+.card.bg-light {
+    background: rgba(248, 249, 250, 0.8) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 2rem 1.5rem !important;
+    }
+    
+    .lead {
+        font-size: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+}
+</style>
+
+<script>
+// Auto-redirect to order details after 30 seconds
+setTimeout(function() {
+    if (confirm('Would you like to view your order details now?')) {
+        window.location.href = "{% url 'orders:order_detail' order.id %}";
+    }
+}, 30000);
+
+// Add some celebration effect
+document.addEventListener('DOMContentLoaded', function() {
+    // Create confetti effect (simple version)
+    function createConfetti() {
+        const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1'];
+        
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed;
+                    top: -10px;
+                    left: ${Math.random() * 100}%;
+                    width: 6px;
+                    height: 6px;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    border-radius: 50%;
+                    z-index: 9999;
+                    pointer-events: none;
+                    animation: fall 3s linear forwards;
+                `;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                        confetti.parentNode.removeChild(confetti);
+                    }
+                }, 3000);
+            }, i * 50);
+        }
+    }
+    
+    // CSS for falling animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Trigger confetti
+    createConfetti();
+});
+</script>
+{% endblock %}

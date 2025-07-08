@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}Shopping Cart - Restaurant Order System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-shopping-cart"></i> Your Cart
+            {% if cart_count > 0 %}
+                <span class="badge bg-primary">{{ cart_count }} item{{ cart_count|pluralize }}</span>
+            {% endif %}
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Cart Items -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body">
+                {% if cart_items %}
+                    {% for item in cart_items %}
+                    <div class="row align-items-center border-bottom py-3">
+                        <div class="col-md-2">
+                            {% if item.food_item.image %}
+                                <img src="{{ item.food_item.image.url }}" alt="{{ item.name }}" class="img-fluid rounded" style="max-height: 60px;">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-utensils text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-1">{{ item.name }}</h6>
+                            <p class="text-muted mb-0">${{ item.price }} each</p>
+                        </div>
+                        <div class="col-md-3">
+                            <form method="post" action="{% url 'food:update_cart_quantity' item.food_id %}" class="d-inline">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('{{ item.food_id }}', {{ item.quantity|add:'-1' }})">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" name="quantity" class="form-control text-center" value="{{ item.quantity }}" min="1" style="max-width: 60px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('{{ item.food_id }}', {{ item.quantity|add:'1' }})">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>${{ item.subtotal }}</strong>
+                        </div>
+                        <div class="col-md-1">
+                            <a href="{% url 'food:remove_from_cart' item.food_id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove this item from cart?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Your cart is empty</h5>
+                        <p class="text-muted">Add some delicious items from our menu!</p>
+                        <a href="{% url 'food:food_menu' %}" class="btn btn-primary">
+                            <i class="fas fa-hamburger"></i> Browse Menu
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Order Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span>Subtotal:</span>
+                    <span>${{ cart_total|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Tax (8%):</span>
+                    <span>${{ tax_amount|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Service Charge:</span>
+                    <span>${{ service_charge|floatformat:2 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between h5">
+                    <strong>Total:</strong>
+                    <strong>${{ final_total|floatformat:2 }}</strong>
+                </div>
+                
+                <div class="mt-3">
+                    {% if cart_items and user_table %}
+                        <form method="post" action="{% url 'orders:create_order' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100 mb-2">
+                                <i class="fas fa-check"></i> Place Order
+                            </button>
+                        </form>
+                    {% elif not user_table %}
+                        <div class="alert alert-warning mb-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Please select a table first to place your order.
+                        </div>
+                        <a href="{% url 'tables:table_list' %}" class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-table"></i> Select Table
+                        </a>
+                    {% else %}
+                        <button class="btn btn-success w-100 mb-2" disabled>
+                            <i class="fas fa-check"></i> Place Order
+                        </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'food:food_menu' %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-plus"></i> Add More Items
+                    </a>
+                    
+                    {% if cart_items %}
+                    <a href="{% url 'orders:clear_cart' %}" class="btn btn-outline-danger w-100" onclick="return confirm('Clear all items from cart?')">
+                        <i class="fas fa-trash"></i> Clear Cart
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Information -->
+        {% if user_table %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Table Information</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Table:</strong> {{ user_table.table_number }}</p>
+                <p class="mb-1"><strong>Capacity:</strong> {{ user_table.capacity }} people</p>
+                <p class="mb-0"><strong>Reserved at:</strong> {{ user_table.reserved_at|date:"H:i" }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateQuantity(foodId, newQuantity) {
+        if (newQuantity <= 0) {
+            if (confirm('Remove this item from cart?')) {
+                window.location.href = `/food/remove-from-cart/${foodId}/`;
+            }
+            return;
+        }
+        
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/food/update-cart/${foodId}/`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = getCookie('csrftoken');
+        
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'hidden';
+        quantityInput.name = 'quantity';
+        quantityInput.value = newQuantity;
+        
+        form.appendChild(csrfToken);
+        form.appendChild(quantityInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+    
+    // Get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Show success messages
+    function showMessage(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast show position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '1060';
+        toast.innerHTML = `
+            <div class="toast-header">
+                <i class="fas fa-${type === 'success' ? 'check-circle text-success' : 'exclamation-circle text-danger'} me-2"></i>
+                <strong class="me-auto">${type === 'success' ? 'Success' : 'Error'}</strong>
+                <button type="button" class="btn-close" onclick="this.closest('.toast').remove()"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
+    }
+</script>
+{% endblock %}

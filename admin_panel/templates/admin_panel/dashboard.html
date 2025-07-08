@@ -1,0 +1,360 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <!-- Statistics Cards -->
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title text-muted">Today's Revenue</h6>
+                        <h3 class="text-primary">${{ daily_report.total_revenue|default:"0.00" }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title text-muted">Today's Orders</h6>
+                        <h3 class="text-success">{{ daily_report.total_orders|default:"0" }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shopping-cart fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title text-muted">Available Tables</h6>
+                        <h3 class="text-info">{{ available_tables }}/{{ total_tables }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-table fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title text-muted">Pending Orders</h6>
+                        <h3 class="text-warning">{{ pending_orders }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Orders -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Orders</h5>
+                <div id="live-orders-status" class="badge bg-success">
+                    <i class="fas fa-circle"></i> Live
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="recent-orders-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Table</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            {% for order in recent_orders %}
+                            <tr class="order-status-{{ order.status }}">
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.customer.username }}</td>
+                                <td>{{ order.table.table_number }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ order.get_status_display }}</span>
+                                </td>
+                                <td>${{ order.total_amount }}</td>
+                                <td>{{ order.created_at|date:"H:i" }}</td>
+                                <td>
+                                    {% if order.status != 'delivered' and order.status != 'cancelled' and order.status != 'paid' %}
+                                    <select class="form-select form-select-sm order-status-select" data-order-id="{{ order.id }}">
+                                        {% for status_code, status_display in order.ORDER_STATUS_CHOICES %}
+                                        <option value="{{ status_code }}" {% if status_code == order.status %}selected{% endif %}>
+                                            {{ status_display }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No recent orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Summary -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">This Month</h5>
+            </div>
+            <div class="card-body">
+                {% if monthly_report %}
+                <div class="mb-3">
+                    <small class="text-muted">Total Revenue</small>
+                    <h4 class="text-primary">${{ monthly_report.total_revenue }}</h4>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Total Orders</small>
+                    <h4 class="text-success">{{ monthly_report.total_orders }}</h4>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Completed Orders</small>
+                    <h4 class="text-info">{{ monthly_report.completed_orders }}</h4>
+                </div>
+                <div class="mb-0">
+                    <small class="text-muted">Average Order Value</small>
+                    <h4 class="text-warning">${{ monthly_report.average_order_value }}</h4>
+                </div>
+                {% else %}
+                <p class="text-muted">No data available for this month</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_panel:add_food_item' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> Add Food Item
+                    </a>
+                    <a href="{% url 'admin_panel:table_management' %}" class="btn btn-outline-success">
+                        <i class="fas fa-table"></i> Manage Tables
+                    </a>
+                    <button class="btn btn-outline-info" onclick="generateDailyReport()">
+                        <i class="fas fa-chart-bar"></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// WebSocket connection for real-time updates
+let socket;
+let reconnectInterval = 5000;
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/admin/orders/`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = function(e) {
+        console.log('WebSocket connected');
+        document.getElementById('live-orders-status').className = 'badge bg-success';
+        document.getElementById('live-orders-status').innerHTML = '<i class="fas fa-circle"></i> Live';
+        
+        // Request current orders
+        socket.send(JSON.stringify({
+            'type': 'get_orders'
+        }));
+    };
+    
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'new_order') {
+            addNewOrderToTable(data.order);
+            showNotification('New order received!', 'success');
+        } else if (data.type === 'order_update') {
+            updateOrderInTable(data.order);
+        } else if (data.type === 'orders_list') {
+            updateOrdersTable(data.orders);
+        } else if (data.type === 'counter_payment_notification') {
+            showNotification(data.notification.message, 'warning');
+        }
+    };
+    
+    socket.onclose = function(e) {
+        console.log('WebSocket disconnected');
+        document.getElementById('live-orders-status').className = 'badge bg-danger';
+        document.getElementById('live-orders-status').innerHTML = '<i class="fas fa-circle"></i> Disconnected';
+        
+        setTimeout(connectWebSocket, reconnectInterval);
+    };
+    
+    socket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+    };
+}
+
+function addNewOrderToTable(order) {
+    const tbody = document.getElementById('orders-tbody');
+    const newRow = createOrderRow(order);
+    tbody.insertBefore(newRow, tbody.firstChild);
+    
+    // Remove last row if more than 10 orders
+    if (tbody.children.length > 10) {
+        tbody.removeChild(tbody.lastChild);
+    }
+}
+
+function updateOrderInTable(order) {
+    const rows = document.querySelectorAll('#orders-tbody tr');
+    for (let row of rows) {
+        const orderIdCell = row.querySelector('td:first-child');
+        if (orderIdCell && orderIdCell.textContent === `#${order.id}`) {
+            const statusCell = row.querySelector('td:nth-child(4)');
+            statusCell.innerHTML = `<span class="badge bg-primary">${order.status_display}</span>`;
+            row.className = `order-status-${order.status}`;
+            break;
+        }
+    }
+}
+
+function createOrderRow(order) {
+    const row = document.createElement('tr');
+    row.className = `order-status-${order.status}`;
+    row.innerHTML = `
+        <td>#${order.id}</td>
+        <td>${order.customer}</td>
+        <td>${order.table_number}</td>
+        <td><span class="badge bg-primary">${order.status_display}</span></td>
+        <td>$${order.total_amount}</td>
+        <td>${new Date(order.created_at).toLocaleTimeString()}</td>
+        <td>
+            ${order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'paid' ? `
+            <select class="form-select form-select-sm order-status-select" data-order-id="${order.id}">
+                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparing</option>
+                <option value="ready" ${order.status === 'ready' ? 'selected' : ''}>Ready</option>
+                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>Paid</option>
+                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+            ` : ''}
+        </td>
+    `;
+    return row;
+}
+
+function updateOrdersTable(orders) {
+    const tbody = document.getElementById('orders-tbody');
+    tbody.innerHTML = '';
+    
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No recent orders</td></tr>';
+        return;
+    }
+    
+    orders.forEach(order => {
+        tbody.appendChild(createOrderRow(order));
+    });
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+
+// Handle order status changes
+$(document).on('change', '.order-status-select', function() {
+    const orderId = $(this).data('order-id');
+    const newStatus = $(this).val();
+    
+    $.post(`/admin-panel/order/${orderId}/update-status/`, {
+        'status': newStatus,
+        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+    })
+    .done(function(data) {
+        if (data.success) {
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.message, 'danger');
+        }
+    })
+    .fail(function() {
+        showNotification('Error updating order status', 'danger');
+    });
+});
+
+function generateDailyReport() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    $.post('{% url "admin_panel:generate_reports" %}', {
+        'report_type': 'daily',
+        'date': today,
+        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+    })
+    .done(function() {
+        showNotification('Daily report generated successfully!', 'success');
+        location.reload();
+    })
+    .fail(function() {
+        showNotification('Error generating report', 'danger');
+    });
+}
+
+// Initialize WebSocket connection
+connectWebSocket();
+</script>
+{% endblock %}

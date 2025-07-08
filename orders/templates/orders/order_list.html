@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders - Restaurant Order System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-list"></i> My Orders
+            </h2>
+            <a href="{% url 'food:food_menu' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Order More
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if orders %}
+            {% for order in orders %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <h5 class="mb-1">Order #{{ order.id }}</h5>
+                            <small class="text-muted">{{ order.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'paid' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'ready' %}warning{% else %}primary{% endif %} fs-6" id="order-status-{{ order.id }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Table {{ order.table.table_number }}</strong>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="text-muted">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong class="h5 text-success">${{ order.total_amount }}</strong>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items Preview -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <small class="text-muted">Items: </small>
+                            {% for item in order.items.all|slice:":3" %}
+                                <span class="badge bg-light text-dark me-1">{{ item.quantity }}x {{ item.food_item.name }}</span>
+                            {% endfor %}
+                            {% if order.items.count > 3 %}
+                                <span class="badge bg-secondary">+{{ order.items.count|add:"-3" }} more</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No orders yet</h4>
+                    <p class="text-muted mb-4">You haven't placed any orders yet. Start by browsing our delicious menu!</p>
+                    <a href="{% url 'food:food_menu' %}" class="btn btn-primary">
+                        <i class="fas fa-hamburger"></i> Browse Menu
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// WebSocket connection for real-time order status updates
+let socket;
+let reconnectInterval = 5000;
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/customer/orders/`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = function(e) {
+        console.log('Customer WebSocket connected');
+    };
+    
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'order_status_update') {
+            // Handle special status changes
+            if (data.order.status === 'paid') {
+                showPaidNotification(data.order.id);
+                setTimeout(() => {
+                    window.location.href = `/orders/success/${data.order.id}/`;
+                }, 3000);
+                return;
+            } else if (data.order.status === 'cancelled') {
+                showCancelledNotification(data.order.id);
+                return;
+            }
+            
+            updateOrderStatusInList(data.order);
+            showStatusUpdateNotification(data.order.id, data.order.status_display);
+        }
+    };
+    
+    socket.onclose = function(e) {
+        console.log('Customer WebSocket disconnected');
+        setTimeout(connectWebSocket, reconnectInterval);
+    };
+    
+    socket.onerror = function(e) {
+        console.error('Customer WebSocket error:', e);
+    };
+}
+
+function updateOrderStatusInList(order) {
+    const statusBadge = document.getElementById('order-status-' + order.id);
+    if (statusBadge) {
+        let badgeClass = 'badge bg-primary fs-6';
+        if (order.status === 'delivered') badgeClass = 'badge bg-success fs-6';
+        else if (order.status === 'paid') badgeClass = 'badge bg-success fs-6';
+        else if (order.status === 'cancelled') badgeClass = 'badge bg-danger fs-6';
+        else if (order.status === 'ready') badgeClass = 'badge bg-warning fs-6';
+        
+        statusBadge.className = badgeClass;
+        statusBadge.textContent = order.status_display;
+    }
+}
+
+function showStatusUpdateNotification(orderId, statusDisplay) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <strong><i class="fas fa-info-circle"></i> Order #${orderId} Updated!</strong><br>
+        Status: <strong>${statusDisplay}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+function showPaidNotification(orderId) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <strong><i class="fas fa-check-circle"></i> Payment Confirmed!</strong><br>
+        Order #${orderId} has been paid successfully!<br>
+        <small>Redirecting to success page...</small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+function showCancelledNotification(orderId) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <strong><i class="fas fa-exclamation-triangle"></i> Order Cancelled!</strong><br>
+        Order #${orderId} has been cancelled. Order again?
+        <div class="mt-2">
+            <button type="button" class="btn btn-sm btn-danger me-2" onclick="redirectToMenu()">
+                <i class="fas fa-utensils"></i> Order Again
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-redirect after 10 seconds
+    setTimeout(() => {
+        redirectToMenu();
+    }, 10000);
+}
+
+function redirectToMenu() {
+    window.location.href = '/food/';
+}
+
+// Initialize WebSocket connection when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    connectWebSocket();
+});
+</script>
+{% endblock %}
