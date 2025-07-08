@@ -9,3 +9,8 @@ Pillow==11.2.1
 whitenoise==6.9.0
 autobahn==24.4.2
 twisted==25.5.0
+gunicorn==21.2.0
+dj-database-url==2.1.0
+python-decouple==3.8
+redis==5.0.1
+celery==5.3.4

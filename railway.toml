@@ -1,0 +1,14 @@
+[build]
+builder = "dockerfiles"
+buildCommand = "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+
+[deploy]
+startCommand = "daphne -b 0.0.0.0 -p $PORT restaurant_system.asgi:application"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[services]
+railway-db = "postgresql"
+railway-redis = "redis"
